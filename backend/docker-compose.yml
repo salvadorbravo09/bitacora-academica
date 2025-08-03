@@ -1,0 +1,61 @@
+# Version de Docker Compose
+version: "3"
+
+# Definicion de servicios (contenedores) que componen la aplicacion
+services:
+
+  # Servicio de la aplicacion Spring Boot
+  app:
+    # Nombre del contenedor (opcional, por defecto sería el nombre del directorio + servicio)
+    container_name: "backend_container"
+
+    # Construye la imagen usando el Dockerfile en el directorio actual
+    build: .
+
+    # Mapeo de puertos: [puerto_host]:[puerto_contenedor]
+    ports:
+      - "8081:8081"
+
+    # Variables de entorno que sobreescriben las del Dockerfile
+    # Spring Boot las usa automaticamente para configurar la conexion a la base de datos
+    environment:
+      - DATABASE_URL=jdbc:mysql://mysqldb:3306/db_bitacora_academica
+      - DATABASE_USERNAME=root
+      - DATABASE_PASSWORD=password
+
+    # Dependencias: este contenedor no iniciara hasta que 'mysqldb' este ejecutandose
+    # Garantiza que la base de datos este disponible antes de iniciar la aplicacion
+    depends_on:
+      - mysqldb
+
+  # Servicio de la base de datos MySQL
+  mysqldb:
+    # Nombre del contenedor
+    container_name: "mysqldb"
+
+    # Imagen oficial de MySQL version 5.7 desde Docker Hub
+    image: "mysql:5.7"
+
+    # Mapeo de puertos: permite conectarse desde el host (gestion de base de datos, tableplus, dbeaver, etc)
+    ports:
+      - "3306:3306"
+
+    # Volumenes: persiste los datos de MySQL para que no se pierdan al reiniciar el contenedor
+    # mysql-data es un volumen nombrado que se almacena el sistema host
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    # Variables de entorno especificas de  MySQL
+    environment:
+      # Crea automaticamente la base de datos al iniciar el contenedor
+      MYSQL_DATABASE: "db_bitacora_academica"
+      # Establece la contraseña del usuario root
+      MYSQL_ROOT_PASSWORD: "password"
+
+# Definicion de volumenes para persistencia de datos
+volumes:
+  # Volumen para almacenar datos de MySQL
+  mysql-data:
+    # external: false significa que Docker Compose gestiona este volumen
+    # Si fuera true, esperaría que el volumen ya existiera externamente
+    external: false
